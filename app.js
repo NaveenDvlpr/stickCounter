@@ -10,10 +10,10 @@ const score = document.querySelector(".score");
 
 let hot100Count, infiniteCount, challengeCounts, mode;
 
-const addCounter = () => {
+const addCounter = (cont) => {
     const counter = document.createElement("div");
-    if(mode === "infinite") container.insertBefore(counter, container.firstElementChild);
-    else container.appendChild(counter);
+    if(mode === "infinite") cont.insertBefore(counter, container.firstElementChild);
+    else cont.appendChild(counter);
     
     counter.classList.add("counter");
     counter.addEventListener("click", addSticks);
@@ -33,6 +33,10 @@ const addSticks = (e) => {
         } else if(mode == "infinite") {
             infiniteCount++;
             localStorage.setItem("infinite", infiniteCount);
+        } else {
+            if(e.target.parentElement.getAttribute("id") == "cc1") challengeCounts.scoreA++;
+            else challengeCounts.scoreB++;
+            localStorage.setItem("challenge", JSON.stringify(challengeCounts));
         }
         const stick = document.createElement("div");
         stick.classList.add("stick");
@@ -49,16 +53,28 @@ const addPlaneSticks = (num, counter) => {
 }
 
 const handleCounter = (e) => {
-    let count;
-    if(mode == "infinite") count = infiniteCount;
-    else if(mode == "hot100") count = hot100Count;
-    if(count%5 === 0 && e.target.matches(".counter")) {
-        const counters = document.getElementsByClassName("counter");
-        if(mode == "infinite") disableCounter(counters[0]);
-        else if(mode == "hot100") disableCounter(counters[counters.length-1]);
-        addCounter();
+    let count, cont = container;
+    if(e.target.matches(".counter")) {
+        if(mode == "infinite") count = infiniteCount;
+        else if(mode == "hot100") count = hot100Count;
+        else {
+            if(e.target.parentElement.getAttribute("id") == "cc1") {
+                console.log("player A");
+                count = challengeCounts.scoreA;
+                cont = document.querySelector("#cc1");
+            } else {
+                console.log("player B");
+                count = challengeCounts.scoreB;
+                cont = document.querySelector("#cc2");
+            }
+        }
+        if(count%5 === 0) {
+            const counters = cont.getElementsByClassName("counter");
+            if(mode == "infinite") disableCounter(counters[0]);
+            else disableCounter(counters[counters.length-1]);
+            addCounter(cont);
+        }
     }
-    
 }
 
 const handleLoad = () => {
@@ -74,6 +90,13 @@ const handleLoad = () => {
         localStorage.setItem("infinite", infiniteCount);
     }
     challengeCounts = JSON.parse(localStorage.getItem("challenge"));
+    if(challengeCounts == null) {
+        challengeCounts = {};
+        challengeCounts.target=20;
+        challengeCounts.scoreA=0;
+        challengeCounts.scoreB=0;
+        localStorage.setItem("challenge", JSON.stringify(challengeCounts));
+    }
     mode = localStorage.getItem("mode");
     if(mode == null) {
         mode = "hot100";
@@ -117,6 +140,38 @@ const handleInfiniteLoad = () => {
 const handleChallengeLoad = () => {
     const scoreA = challengeCounts.scoreA;
     const scoreB = challengeCounts.scoreB;
+    const conA = document.createElement("div");
+    conA.classList.add("challengeContainer");
+    conA.setAttribute("id", "cc1");
+    container.appendChild(conA);
+    const conB = document.createElement("div");
+    container.appendChild(conB);
+    conB.classList.add("challengeContainer");
+    conB.setAttribute("id", "cc2");
+    for(let i = scoreA; i >= 0; i-=5) {
+        const counter = document.createElement("div");
+        if(i < 5) {
+            counter.classList.add("counter");
+            counter.addEventListener("click", addSticks);
+            addPlaneSticks(i, counter);
+        } else {
+            counter.classList.add("oldCounter");
+            addPlaneSticks(5, counter);
+        }
+        conA.appendChild(counter);
+    }
+    for(let i = scoreB; i >= 0; i-=5) {
+        const counter = document.createElement("div");
+        if(i < 5) {
+            counter.classList.add("counter");
+            counter.addEventListener("click", addSticks);
+            addPlaneSticks(i, counter);
+        } else {
+            counter.classList.add("oldCounter");
+            addPlaneSticks(5, counter);
+        }
+        conB.appendChild(counter);
+    }
 }
 
 
@@ -130,7 +185,10 @@ const handleRestart = () => {
         localStorage.setItem("infinite", infiniteCount);
     }
     else {
-        // Challenge
+        challengeCounts.target=20;
+        challengeCounts.scoreA=0;
+        challengeCounts.scoreB=0;
+        localStorage.setItem("challenge", JSON.stringify(challengeCounts));
     }
     handleLoad();
 }
@@ -154,4 +212,10 @@ infinite.addEventListener("click", () => {
         handleLoad();
     } 
 });
-challenge.addEventListener("click", handleChallengeLoad);
+challenge.addEventListener("click", () => {
+    if(mode !== "challenge") {
+        mode = "challenge";
+        localStorage.setItem("mode", mode);
+        handleLoad();
+    }
+});

@@ -97,3 +97,11 @@ body {
 .oldCounter .stick {
     background-color: gray;
 }
+
+.challengeContainer {
+    width: 50%;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap; 
+    border: 1px solid;
+}
