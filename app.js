@@ -8,11 +8,13 @@ const score = document.querySelector(".score");
 
 
 
-let count;
+let hot100Count, infiniteCount, challengeCounts, mode;
 
 const addCounter = () => {
     const counter = document.createElement("div");
-    container.insertBefore(counter, container.firstElementChild);
+    if(mode === "infinite") container.insertBefore(counter, container.firstElementChild);
+    else container.appendChild(counter);
+    
     counter.classList.add("counter");
     counter.addEventListener("click", addSticks);
 }
@@ -25,8 +27,13 @@ const disableCounter = (counter) => {
 
 const addSticks = (e) => {
     if(e.target.matches(".counter")) {
-        count++;
-        localStorage.setItem("count", count); 
+        if(mode == "hot100") {
+            hot100Count++;
+            localStorage.setItem("hot100", hot100Count);
+        } else if(mode == "infinite") {
+            infiniteCount++;
+            localStorage.setItem("infinite", infiniteCount);
+        }
         const stick = document.createElement("div");
         stick.classList.add("stick");
         e.target.appendChild(stick);
@@ -42,19 +49,58 @@ const addPlaneSticks = (num, counter) => {
 }
 
 const handleCounter = (e) => {
+    let count;
+    if(mode == "infinite") count = infiniteCount;
+    else if(mode == "hot100") count = hot100Count;
     if(count%5 === 0 && e.target.matches(".counter")) {
         const counters = document.getElementsByClassName("counter");
-        console.log(counters);
-        if(counters.length > 0) disableCounter(counters[counters.length-1]);
+        if(mode == "infinite") disableCounter(counters[0]);
+        else if(mode == "hot100") disableCounter(counters[counters.length-1]);
         addCounter();
     }
     
 }
 
 const handleLoad = () => {
-    count = localStorage.getItem("count");
-    console.log(count);
-    for(let i = count; i >= 0; i-=5) {
+    container.innerHTML="";
+    hot100Count = localStorage.getItem("hot100");
+    if(hot100Count == null) {
+        hot100Count = 0;
+        localStorage.setItem("hot100", hot100Count);
+    }
+    infiniteCount = localStorage.getItem("infinite");
+    if(infiniteCount == null) {
+        infiniteCount = 0;
+        localStorage.setItem("infinite", infiniteCount);
+    }
+    challengeCounts = JSON.parse(localStorage.getItem("challenge"));
+    mode = localStorage.getItem("mode");
+    if(mode == null) {
+        mode = "hot100";
+        localStorage.setItem("mode", mode);
+    }
+    if(mode === "challenge") handleChallengeLoad();
+    else if(mode === "infinite") handleInfiniteLoad();
+    else handleHot100Load(); 
+}
+
+const handleHot100Load = () => {
+    for(let i = hot100Count; i >= 0; i-=5) {
+        const counter = document.createElement("div");
+        if(i < 5) {
+            counter.classList.add("counter");
+            counter.addEventListener("click", addSticks);
+            addPlaneSticks(i, counter);
+        } else {
+            counter.classList.add("oldCounter");
+            addPlaneSticks(5, counter);
+        }
+        container.appendChild(counter);
+    }
+}
+
+const handleInfiniteLoad = () => {
+    for(let i = infiniteCount; i >= 0; i-=5) {
         const counter = document.createElement("div");
         if(i < 5) {
             counter.classList.add("counter");
@@ -66,14 +112,27 @@ const handleLoad = () => {
         }
         container.insertBefore(counter, container.firstChild);
     }
-    
 }
 
+const handleChallengeLoad = () => {
+    const scoreA = challengeCounts.scoreA;
+    const scoreB = challengeCounts.scoreB;
+}
+
+
 const handleRestart = () => {
-    container.innerHTML = "";
-    addCounter();
-    count = 0;
-    localStorage.setItem("count", count);
+    if(mode === "hot100") {
+        hot100Count = 0;
+        localStorage.setItem("hot100", hot100Count);
+    } 
+    else if(mode === "infinite") {
+        infiniteCount = 0;
+        localStorage.setItem("infinite", infiniteCount);
+    }
+    else {
+        // Challenge
+    }
+    handleLoad();
 }
 
 
@@ -81,4 +140,18 @@ const handleRestart = () => {
 window.addEventListener("load", handleLoad);
 container.addEventListener("click", handleCounter);
 restart.addEventListener("click", handleRestart);
-
+hot100.addEventListener("click", () => {
+    if(mode !== "hot100") {
+        mode = "hot100";
+        localStorage.setItem("mode", mode);
+        handleLoad();
+    }
+});
+infinite.addEventListener("click", () => {
+    if(mode !== "infinite") {
+        mode = "infinite";
+        localStorage.setItem("mode", mode);
+        handleLoad();
+    } 
+});
+challenge.addEventListener("click", handleChallengeLoad);
